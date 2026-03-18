@@ -1,0 +1,23 @@
+{
+  "name": "NUGGET",
+  "description": "ALGO×HBAR bridge NFT",
+  "image": "https://raw.githubusercontent.com/chopmob-cloud/Content/main/nugget.png",
+  "type": "image/png",
+  "format": "HIP412@2.0.0",
+  "creator": "ILC / NUGGET",
+  "properties": {
+    "symbol": "NUGGET",
+    "website": "https://www.ilovechicken.co.uk"
+  },
+  "attributes": [
+    { "trait_type": "Token Type", "value": "Bridge NFT" },
+    { "trait_type": "Network", "value": "HBAR / ALGO" }
+  ],
+  "files": [
+    {
+      "uri": "https://raw.githubusercontent.com/chopmob-cloud/Content/main/nugget.png",
+      "type": "image/png",
+      "is_default_file": true
+    }
+  ]
+}
