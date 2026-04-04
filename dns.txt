@@ -1,0 +1,92 @@
+.voi Native DNS Resolution Guide
+
+For the Voi Community
+
+Mirroring NFDDomains .algo—Cloudflare Workers + Nodely Indexer (https://mainnet-idx.voi.nodely.dev). Dynamic TXT: voi-addr=receiver;voi-memo=token. Free, global. 30 mins to live.
+
+Background
+NFDDomains .algo uses:
+
+Contracts: NFD Registry + per-domain TEAL apps.
+
+DNS: TXT records (blockchain addrs, no IPs).
+
+Ex: dig TXT nfdomains.algo → "algo-addr=GABC...;memo=123"
+
+Replicate for envoi.names via Nodely.
+
+Cloudflare + Nodely Implementation
+Nodely: Official, AVM-native, <200ms latency, unlimited community tier.
+
+1. Prerequisites
+Cloudflare free account.
+
+Domain (*.voi.yourdomain.com).
+
+Nodely: https://mainnet-idx.voi.nodely.dev/v2
+
+Envoi Registry App ID (from docs.voi.network).
+
+2. DNS Setup
+text
+Dashboard → DNS:
+- A @ 192.0.2.1 (Proxied ON)
+- NS *.voi → voi-dns.yourdomain.com (Proxied ON)
+
+3. Worker Script (voi-dns.js) — Nodely Edition
+javascript
+const INDEXER = 'https://mainnet-idx.voi.nodely.dev/v2';
+const ENVOI_APP_ID = 12345678;  // Replace with real ID
+
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const name = url.pathname.slice(1).split('.')[0];  // "user"
+
+    // Query Nodely for envoi registry box
+    const boxKey = btoa(`name/${name}.voi`);  // Base64 for box
+    const res = await fetch(`${INDEXER}/applications/${ENVOI_APP_ID}/boxes/${boxKey}`);
+    
+    if (!res.ok) return new Response('Not found', {status: 404});
+    
+    const data = await res.json();
+    const addr = data.records?.addr || '';  // Parse per schema
+    const memo = data.records?.memo || '';
+
+    const txt = `voi-addr=${addr};voi-memo=${memo}`;
+    return new Response(txt, { headers: { 'Content-Type': 'text/plain' } });
+  }
+};
+
+4. Deploy
+bash
+npm create cloudflare@latest voi-dns
+cd voi-dns
+# Paste updated script to src/index.js
+echo 'dns voi *.voi' > wrangler.toml
+npx wrangler deploy
+
+5. Test
+bash
+dig +short TXT user.voi.yourdomain.com @1.1.1.1
+# "voi-addr=GABC...XYZ;voi-memo=DETECT123"
+Integration Examples
+Python (AlgoVoi)
+python
+import dns.resolver
+def resolve_voi(name):
+    txt = str(dns.resolver.resolve(f"{name}.voi.yourdomain.com", "TXT")[0])
+    addr, memo = parse_voi_txt(txt)
+    return addr, memo
+JS (Wallet)
+js
+const res = await fetch('https://cloudflare-dns.com/dns-query?name=user.voi.yourdomain.com&type=TXT', {
+  headers: {'accept': 'application/dns-json'}
+});
+const txt = res.Answer[0].data;
+Enhancements
+Cache: env.KV.get(key, {cacheTtl: 300}).
+
+Fallback: Nodely fail → direct RPC.
+
+True .voi: Registrar NS delegation.
